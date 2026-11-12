@@ -246,6 +246,13 @@ def main():
                         "functions": [{"function": "minecraft:set_components", "components": components(t)}]})
     write(f"{data}/loot_table/all_tools.json", dump({"type": "minecraft:command",
           "pools": [{"rolls": 1, "entries": [e]} for e in entries]}))
+    # Unlock all five recipes in every player's recipe book as soon as they join (shown greyed out:
+    # nobody has bedrock). Recipe advancements have no display, so only the "New Recipes" toast shows.
+    write(f"{data}/advancement/recipes/bedrock_tools.json", dump({
+        "parent": "minecraft:recipes/root",
+        "criteria": {"joined": {"trigger": "minecraft:tick"}},
+        "requirements": [["joined"]],
+        "rewards": {"recipes": [f"bedrocktools:bedrock_{key}" for key in TOOLS]}}))
     pack = pack_bytes()
     name = f"bedrocktools-pack-v{PACK_VERSION}.zip"
     with open(os.path.join(here, "..", name), "wb") as f:

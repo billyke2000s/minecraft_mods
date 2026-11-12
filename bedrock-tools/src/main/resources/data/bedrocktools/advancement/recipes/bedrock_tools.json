@@ -1,0 +1,22 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "joined": {
+      "trigger": "minecraft:tick"
+    }
+  },
+  "requirements": [
+    [
+      "joined"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "bedrocktools:bedrock_sword",
+      "bedrocktools:bedrock_pickaxe",
+      "bedrocktools:bedrock_axe",
+      "bedrocktools:bedrock_shovel",
+      "bedrocktools:bedrock_hoe"
+    ]
+  }
+}

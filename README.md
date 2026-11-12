@@ -15,4 +15,5 @@ netherite tools are unchanged. Players need nothing installed: the look comes fr
 `bedrocktools-pack-v1.zip`, which the mod sends when a player joins. Its models use Minecraft's own
 bedrock texture (no copied textures). Change the tools in `bedrock-tools/tools/generate.py`, run it,
 and commit what it writes; a new pack needs a new `PACK_VERSION` file name. Admins can give a full set
-with `/loot give <player> loot bedrocktools:all_tools`.
+with `/loot give <player> loot bedrocktools:all_tools`. Every player gets the recipes in their recipe book on
+join (greyed out without bedrock).
