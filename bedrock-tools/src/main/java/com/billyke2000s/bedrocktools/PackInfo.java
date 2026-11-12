@@ -4,5 +4,5 @@ package com.billyke2000s.bedrocktools;
 final class PackInfo {
     private PackInfo() {}
     static final String URL = "https://raw.githubusercontent.com/billyke2000s/minecraft_mods/main/bedrocktools-pack-v1.zip";
-    static final String SHA1 = "d4dccdb3e725396aeaa9c32ef4ac5968e97f367b";
+    static final String SHA1 = "4a304a6f14710da4d8dae66e22cb30411775558b";
 }

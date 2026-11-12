@@ -223,10 +223,13 @@ def pack_bytes():
             "textures": {"head": HEAD_TEXTURE, "handle": HANDLE_TEXTURE, "particle": HEAD_TEXTURE},
             "elements": elements(rows), "display": DISPLAY})
     buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+    # Stored, not deflated: compressed bytes vary between zlib versions, which would change the SHA-1.
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as z:
         for path in sorted(files):
             info = zipfile.ZipInfo(path, date_time=(2026, 1, 1, 0, 0, 0))
-            info.compress_type = zipfile.ZIP_DEFLATED
+            info.compress_type = zipfile.ZIP_STORED
+            info.create_system = 3
+            info.external_attr = 0o644 << 16
             z.writestr(info, files[path])
     return buf.getvalue()
 
