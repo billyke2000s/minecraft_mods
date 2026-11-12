@@ -17,3 +17,21 @@ bedrock texture (no copied textures). Change the tools in `bedrock-tools/tools/g
 and commit what it writes; a new pack needs a new `PACK_VERSION` file name. Admins can give a full set
 with `/loot give <player> loot bedrocktools:all_tools`. Every player gets the recipes in their recipe book on
 join (greyed out without bedrock).
+
+## Whip (server + client mod)
+
+`whip/` is a NeoForge 1.21.1 mod that adds a black braided leather **Whip** (Combat tab). A lash deals
+half a heart and jolts the target forward in the direction you're facing with a little hop. It reaches
+2 blocks further than a normal hit, has 250 durability, and right-click cracks it in the air. Players
+need it too; AutoModpack syncs it.
+
+Recipe (shaped): leather on the diagonal from bottom-left to top-right, and string down the right-hand
+column below the top corner:
+
+```
+. . L
+. L S
+L . S
+```
+
+The texture comes from `whip/tools/generate_textures.py` (needs Pillow).
