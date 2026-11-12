@@ -42,6 +42,20 @@ jobs:
           path: natives/build/libs/*.jar
           if-no-files-found: error
 
+      - name: Publish test build to the natives-dist branch
+        if: github.ref != 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          mkdir -p /tmp/dist && cp "build/libs/natives-$ver.jar" /tmp/dist/
+          cd /tmp/dist
+          git init -q -b natives-dist
+          git add .
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com \
+            commit -q -m "Natives $ver test build from ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" natives-dist
+
       - name: Publish release
         if: github.ref == 'refs/heads/main'
         env:
