@@ -1,0 +1,85 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " B ",
+    " S ",
+    " S "
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:bedrock"
+    },
+    "S": {
+      "item": "minecraft:stick"
+    }
+  },
+  "result": {
+    "id": "minecraft:netherite_shovel",
+    "count": 1,
+    "components": {
+      "minecraft:item_name": "{\"text\":\"Bedrock Shovel\",\"color\":\"dark_gray\",\"italic\":false}",
+      "minecraft:unbreakable": {
+        "show_in_tooltip": true
+      },
+      "minecraft:custom_model_data": 7301,
+      "minecraft:rarity": "epic",
+      "minecraft:enchantment_glint_override": false,
+      "minecraft:enchantments": {
+        "levels": {
+          "minecraft:efficiency": 10,
+          "minecraft:fortune": 5
+        },
+        "show_in_tooltip": true
+      },
+      "minecraft:attribute_modifiers": {
+        "modifiers": [
+          {
+            "type": "minecraft:generic.attack_damage",
+            "id": "bedrocktools:damage",
+            "amount": 19,
+            "operation": "add_value",
+            "slot": "mainhand"
+          },
+          {
+            "type": "minecraft:generic.attack_speed",
+            "id": "bedrocktools:speed",
+            "amount": 4,
+            "operation": "add_value",
+            "slot": "mainhand"
+          },
+          {
+            "type": "minecraft:player.block_interaction_range",
+            "id": "bedrocktools:block_reach",
+            "amount": 3,
+            "operation": "add_value",
+            "slot": "mainhand"
+          },
+          {
+            "type": "minecraft:player.entity_interaction_range",
+            "id": "bedrocktools:entity_reach",
+            "amount": 2,
+            "operation": "add_value",
+            "slot": "mainhand"
+          }
+        ],
+        "show_in_tooltip": true
+      },
+      "minecraft:tool": {
+        "rules": [
+          {
+            "blocks": "#minecraft:incorrect_for_netherite_tool",
+            "correct_for_drops": false
+          },
+          {
+            "blocks": "#minecraft:mineable/shovel",
+            "speed": 150.0,
+            "correct_for_drops": true
+          }
+        ],
+        "default_mining_speed": 1.0,
+        "damage_per_block": 0
+      }
+    }
+  }
+}

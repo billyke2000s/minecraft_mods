@@ -1,0 +1,64 @@
+name: Bedrock Tools
+
+on:
+  push:
+    paths:
+      - 'bedrock-tools/**'
+      - 'bedrocktools-pack-v*.zip'
+      - '.github/workflows/bedrock-tools.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: bedrock-tools
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generated files match the tool definitions
+        run: |
+          python3 tools/generate.py
+          git diff --exit-code -- . ../bedrocktools-pack-v*.zip
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: |
+          set -o pipefail
+          ./gradlew build --stacktrace 2>&1 | tee build.log
+
+      - name: Report build errors
+        if: failure()
+        run: |
+          msg=$(grep -E "error:|What went wrong|Could not|Caused by|> " -A2 build.log | head -150 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+          echo "::error title=Build failed::$msg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bedrocktools-jar
+          path: bedrock-tools/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Publish release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          jar="build/libs/bedrocktools-$ver.jar"
+          test -f "$jar"
+          if gh release view "bedrocktools-v$ver" >/dev/null 2>&1; then
+            gh release upload "bedrocktools-v$ver" "$jar" --clobber
+          else
+            gh release create "bedrocktools-v$ver" "$jar" --title "Bedrock Tools $ver" \
+              --notes "Server-side NeoForge 1.21.1 mod. Put the jar in the server's mods folder only; players need nothing."
+          fi
