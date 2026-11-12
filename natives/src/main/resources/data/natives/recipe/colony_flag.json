@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SWW",
+    "SWW",
+    "SE "
+  ],
+  "key": {
+    "S": { "item": "minecraft:stick" },
+    "W": { "tag": "minecraft:wool" },
+    "E": { "item": "minecraft:emerald" }
+  },
+  "result": { "id": "natives:colony_flag", "count": 1 }
+}
