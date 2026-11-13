@@ -17,3 +17,9 @@ bedrock texture (no copied textures). Change the tools in `bedrock-tools/tools/g
 and commit what it writes; a new pack needs a new `PACK_VERSION` file name. Admins can give a full set
 with `/loot give <player> loot bedrocktools:all_tools`. Every player gets the recipes in their recipe book on
 join (greyed out without bedrock).
+
+## Villager Kippah (client-side look)
+
+`villager-kippah/` gives every villager a navy kippah with a white embroidered band and peyot, as 3D
+parts attached to the head (they follow head movement and scale on baby villagers). Visual only;
+players without it still join and just see plain villagers. AutoModpack syncs it.
