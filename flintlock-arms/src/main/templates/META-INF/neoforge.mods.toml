@@ -1,0 +1,29 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="billyke2000s"
+# First-person visuals only. Anyone without it can still join; they just don't see the arms.
+displayTest="IGNORE_ALL_VERSION"
+description='''
+Shows your arms in first person while holding the Server Flintlock: your gun hand grips the pistol
+through every animation, and your other hand works the ramrod during the reload.
+'''
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"

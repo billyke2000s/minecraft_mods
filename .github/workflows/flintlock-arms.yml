@@ -1,0 +1,72 @@
+name: Flintlock Arms
+
+on:
+  push:
+    paths:
+      - 'flintlock-arms/**'
+      - '.github/workflows/flintlock-arms.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: flintlock-arms
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: |
+          set -o pipefail
+          ./gradlew build --stacktrace 2>&1 | tee build.log
+
+      - name: Report build errors
+        if: failure()
+        run: |
+          msg=$(grep -E "error:|What went wrong|Could not|Caused by|> " -A2 build.log | head -150 | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+          echo "::error title=Build failed::$msg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flintlock-arms-jar
+          path: flintlock-arms/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Publish test build to the flintlock-arms-dist branch
+        if: github.ref != 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          mkdir -p /tmp/dist && cp "build/libs/flintlockarms-$ver.jar" /tmp/dist/
+          cd /tmp/dist
+          git init -q -b flintlock-arms-dist
+          git add .
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com \
+            commit -q -m "Flintlock Arms $ver test build from ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" flintlock-arms-dist
+
+      - name: Publish release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(grep -E '^mod_version=' gradle.properties | cut -d= -f2 | tr -d '[:space:]')
+          jar="build/libs/flintlockarms-$ver.jar"
+          test -f "$jar"
+          if gh release view "flintlockarms-v$ver" >/dev/null 2>&1; then
+            gh release upload "flintlockarms-v$ver" "$jar" --clobber
+          else
+            gh release create "flintlockarms-v$ver" "$jar" --title "Flintlock Arms $ver" \
+              --notes "NeoForge 1.21.1 mod. Client-side first-person arms for Server Flintlock."
+          fi

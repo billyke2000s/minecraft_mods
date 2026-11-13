@@ -17,3 +17,11 @@ bedrock texture (no copied textures). Change the tools in `bedrock-tools/tools/g
 and commit what it writes; a new pack needs a new `PACK_VERSION` file name. Admins can give a full set
 with `/loot give <player> loot bedrocktools:all_tools`. Every player gets the recipes in their recipe book on
 join (greyed out without bedrock).
+
+## Flintlock Arms (client-side, for Server Flintlock 1.4.0)
+
+`flintlock-arms/` draws your own arms in first person while you hold the Flintlock. Your gun hand is
+placed on the pistol grip using each animation frame's own first-person transform, so it follows the
+recoil, inspect and reload motions. During the reload your other hand comes up, rides the end of the
+ramrod while it's rammed (frames 7708-7722), then drops away. Visual only; players without it can
+still join. AutoModpack syncs it.
