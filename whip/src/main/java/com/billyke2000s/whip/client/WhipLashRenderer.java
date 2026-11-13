@@ -41,16 +41,19 @@ public class WhipLashRenderer extends EntityRenderer<WhipLashEntity> {
     @Override
     public void render(WhipLashEntity lash, float yaw, float partialTick, PoseStack poseStack, MultiBufferSource buffers, int light) {
         Entity owner = lash.owner();
-        float reach = lash.reach(partialTick);
-        if (owner == null || reach <= 0.01F) {
+        if (owner == null) {
+            return;
+        }
+        float unroll = lash.unroll(partialTick);
+        float slack = lash.slack(partialTick);
+        if (slack >= 0.999F) {
             return;
         }
         Vec3 hand = handPosition(owner, partialTick);
-        Vec3 tip = hand.add(lash.target().subtract(hand).scale(reach));
         Vec3 origin = new Vec3(Mth.lerp(partialTick, lash.xo, lash.getX()), Mth.lerp(partialTick, lash.yo, lash.getY()),
                 Mth.lerp(partialTick, lash.zo, lash.getZ()));
 
-        Vec3 dir = tip.subtract(hand);
+        Vec3 dir = lash.target().subtract(hand);
         double length = dir.length();
         if (length < 1.0E-3) {
             return;
@@ -60,15 +63,32 @@ public class WhipLashRenderer extends EntityRenderer<WhipLashEntity> {
         side = side.lengthSqr() < 1.0E-4 ? new Vec3(1, 0, 0) : side.normalize();
         Vec3 up = side.cross(forward).normalize();
 
-        // The thong sags and ripples while flying out, and straightens as it snaps.
-        float slack = 1.0F - reach;
-        float wavePhase = (lash.tickCount + partialTick) * 1.7F;
+        // A real lash unrolls: the part already thrown lies out in front, the rest is folded back above it
+        // in a loop that rolls forward until the tip snaps straight. After the crack it sags and drops.
+        double fold = length * unroll;
+        double loopRadius = 0.18 + 0.25 * (1.0 - unroll);
         Vec3[] points = new Vec3[SEGMENTS + 1];
         for (int i = 0; i <= SEGMENTS; i++) {
+            double s = length * i / SEGMENTS;
+            Vec3 p;
+            if (s <= fold) {
+                double t = fold <= 0 ? 0 : s / length;
+                p = hand.add(forward.scale(s)).add(up.scale(Math.sin(Math.PI * t) * 0.15 * (1.0 - unroll)));
+            } else {
+                double back = s - fold;
+                double arc = Math.PI * loopRadius;
+                Vec3 turn = hand.add(forward.scale(fold));
+                if (back < arc) {
+                    double a = back / loopRadius;
+                    p = turn.add(forward.scale(loopRadius * Math.sin(a))).add(up.scale(loopRadius * (1.0 - Math.cos(a))));
+                } else {
+                    p = turn.subtract(forward.scale(back - arc)).add(up.scale(2.0 * loopRadius));
+                }
+            }
             double t = (double) i / SEGMENTS;
-            double sag = Math.sin(Math.PI * t) * (0.15 + 0.35 * slack) * Math.min(1.0, length / 4.0);
-            double wave = Math.sin(t * Math.PI * 3.0 - wavePhase) * 0.12 * slack * t;
-            points[i] = hand.add(dir.scale(t)).add(0, -sag, 0).add(side.scale(wave)).subtract(origin);
+            double drop = slack * slack * Math.sin(Math.PI * 0.5 * t) * Math.min(2.5, length * 0.45);
+            double sag = Math.sin(Math.PI * t) * 0.08;
+            points[i] = p.add(0, -(drop + sag), 0).subtract(origin);
         }
 
         poseStack.pushPose();
