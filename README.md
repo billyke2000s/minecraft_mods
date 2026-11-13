@@ -25,7 +25,8 @@ half a heart and jolts the target forward in the direction you're facing with a 
 loud crack and a rendered leather lash. Left-click reaches 2 blocks further than a normal hit; **right-click
 throws the whip out to 7 blocks**. Like a real bullwhip it starts thrown back, a loop rolls forward
 until the tip snaps straight, it cracks *at the tip*, and only whoever is still under the tip at that
-moment is struck. Then it goes slack and drops. 250 durability.
+moment is struck. Then it goes slack and drops. The tip also presses buttons, flips levers and trips
+pressure plates it cracks on, from up to 7 blocks away. 250 durability.
 Players need it too; AutoModpack syncs it.
 
 Recipe (shaped): leather on the diagonal from bottom-left to top-right, and string down the right-hand

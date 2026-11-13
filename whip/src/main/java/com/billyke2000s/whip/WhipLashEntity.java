@@ -1,5 +1,6 @@
 package com.billyke2000s.whip;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -35,6 +36,9 @@ public class WhipLashEntity extends Entity {
     private int strikeTargetId = -1;
     /** Server only: whether this lash should deal the hit itself (right-click) or not (left-click, already hit). */
     private boolean strikes;
+    /** Server only: a button, lever or pressure plate the tip lands on, worked when it cracks. */
+    @Nullable
+    private BlockPos strikeBlock;
 
     public WhipLashEntity(EntityType<? extends WhipLashEntity> type, Level level) {
         super(type, level);
@@ -42,12 +46,18 @@ public class WhipLashEntity extends Entity {
     }
 
     public static WhipLashEntity create(Level level, Entity owner, Vec3 target, @Nullable LivingEntity strikeTarget, boolean strikes) {
+        return create(level, owner, target, strikeTarget, null, strikes);
+    }
+
+    public static WhipLashEntity create(Level level, Entity owner, Vec3 target, @Nullable LivingEntity strikeTarget,
+                                        @Nullable BlockPos strikeBlock, boolean strikes) {
         WhipLashEntity lash = new WhipLashEntity(WhipMod.WHIP_LASH.get(), level);
         lash.setPos(owner.getX(), owner.getEyeY(), owner.getZ());
         lash.entityData.set(DATA_OWNER, owner.getId());
         lash.entityData.set(DATA_TARGET, new Vector3f((float) target.x, (float) target.y, (float) target.z));
         lash.strikeTargetId = strikeTarget == null ? -1 : strikeTarget.getId();
         lash.strikes = strikes;
+        lash.strikeBlock = strikeBlock == null ? null : strikeBlock.immutable();
         return lash;
     }
 
@@ -108,7 +118,13 @@ public class WhipLashEntity extends Entity {
         Vec3 tip = target();
         level.playSound(null, tip.x, tip.y, tip.z, WhipMod.CRACK.get(), net.minecraft.sounds.SoundSource.PLAYERS, 3.0F,
                 0.9F + level.getRandom().nextFloat() * 0.2F);
-        if (!strikes || strikeTargetId < 0) {
+        if (!strikes) {
+            return;
+        }
+        if (strikeBlock != null) {
+            WhipItem.hitBlock(level, owner, strikeBlock);
+        }
+        if (strikeTargetId < 0) {
             return;
         }
         Entity hit = level.getEntity(strikeTargetId);

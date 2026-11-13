@@ -1,5 +1,6 @@
 package com.billyke2000s.whip;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,6 +16,12 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BasePressurePlateBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.ButtonBlock;
+import net.minecraft.world.level.block.LeverBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
@@ -63,19 +70,65 @@ public class WhipItem extends Item {
             Vec3 look = player.getLookAngle();
             Vec3 far = eye.add(look.scale(RANGE));
             BlockHitResult block = level.clip(new ClipContext(eye, far, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+            // Buttons, levers and pressure plates have no collision, so look for them separately (by outline)
+            // and let the tip land on one if it's nearer than the first solid block. Grass etc. is ignored.
+            BlockHitResult thin = level.clip(new ClipContext(eye, far, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
+            if (thin.getType() == HitResult.Type.BLOCK && isWorkable(level.getBlockState(thin.getBlockPos()))
+                    && (block.getType() == HitResult.Type.MISS
+                    || eye.distanceToSqr(thin.getLocation()) <= eye.distanceToSqr(block.getLocation()) + 1.0E-4)) {
+                block = thin;
+            }
             Vec3 end = block.getType() == HitResult.Type.MISS ? far : block.getLocation();
             AABB search = player.getBoundingBox().expandTowards(look.scale(RANGE)).inflate(1.0);
             EntityHitResult hit = ProjectileUtil.getEntityHitResult(player, eye, end, search,
                     entity -> entity instanceof LivingEntity && entity != player && entity.isPickable() && !entity.isSpectator(),
                     eye.distanceToSqr(end));
             LivingEntity target = null;
+            BlockPos blockTarget = null;
             if (hit != null && hit.getEntity() instanceof LivingEntity living) {
                 target = living;
                 end = hit.getLocation();
+            } else if (block.getType() == HitResult.Type.BLOCK && isWorkable(level.getBlockState(block.getBlockPos()))) {
+                blockTarget = block.getBlockPos();
             }
-            serverLevel.addFreshEntity(WhipLashEntity.create(serverLevel, player, end, target, true));
+            serverLevel.addFreshEntity(WhipLashEntity.create(serverLevel, player, end, target, blockTarget, true));
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+    }
+
+    private static boolean isWorkable(BlockState state) {
+        Block block = state.getBlock();
+        return block instanceof ButtonBlock || block instanceof LeverBlock || block instanceof BasePressurePlateBlock;
+    }
+
+    /** The tip cracks on a button (press it), lever (flip it) or pressure plate (trip it briefly). */
+    static void hitBlock(ServerLevel level, Entity attacker, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        Block block = state.getBlock();
+        Player player = attacker instanceof Player p ? p : null;
+        if (block instanceof ButtonBlock button) {
+            if (!state.getValue(ButtonBlock.POWERED)) {
+                button.press(state, level, pos, player);
+            }
+        } else if (block instanceof LeverBlock lever) {
+            lever.pull(state, level, pos, player);
+        } else if (block instanceof BasePressurePlateBlock) {
+            BlockState pressed = state;
+            if (state.hasProperty(BlockStateProperties.POWERED) && !state.getValue(BlockStateProperties.POWERED)) {
+                pressed = state.setValue(BlockStateProperties.POWERED, true);
+            } else if (state.hasProperty(BlockStateProperties.POWER) && state.getValue(BlockStateProperties.POWER) == 0) {
+                pressed = state.setValue(BlockStateProperties.POWER, 1);
+            }
+            if (pressed != state) {
+                level.setBlock(pos, pressed, Block.UPDATE_ALL);
+                level.updateNeighborsAt(pos, block);
+                level.updateNeighborsAt(pos.below(), block);
+                level.playSound(null, pos, net.minecraft.sounds.SoundEvents.STONE_PRESSURE_PLATE_CLICK_ON,
+                        net.minecraft.sounds.SoundSource.BLOCKS, 0.3F, 0.6F);
+                // The plate's own tick re-checks for anything standing on it and releases if empty.
+                level.scheduleTick(pos, block, 20);
+            }
+        }
     }
 
     /** The tip lands on a creature: half a heart, a jolt forward, and wear on the whip. */
