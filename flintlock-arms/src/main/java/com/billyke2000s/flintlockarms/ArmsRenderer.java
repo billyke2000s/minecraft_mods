@@ -21,6 +21,7 @@ import net.minecraft.world.entity.player.PlayerModelPart;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import com.mojang.math.Axis;
 import net.minecraft.world.item.component.CustomModelData;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -59,7 +60,13 @@ public final class ArmsRenderer {
     private static final float ROD_Y = 9.24F;
     private static final float[] ROD_END_Z = {-5.9533F, -4.8367F, -3.72F, -2.6033F, -1.4867F, -2.0F, -3.6F, -5.2F,
             -3.8133F, -2.4267F, -1.04F, -2.38F, -3.72F, -5.06F, -6.4F};
+    /** The muzzle mouth (where the rod enters) and a point just above it, in pack pixels. */
+    private static final Vector3f MUZZLE = new Vector3f(8.0F, 9.24F, 1.0F);
+    private static final Vector3f MUZZLE_ABOVE = new Vector3f(8.0F, 13.5F, -1.5F);
+    /** Reload frame (counted from the start) at which the ball is let go into the muzzle. */
+    private static final int BALL_DROP_FRAME = 5;
     private static final int IDLE = 7301;
+    private static final int BALL_MODEL_DATA = 7302;
     private static final int RELOAD_START = 7700;
     private static final int ROD_START = 7708;
     private static final int ROD_END = 7722;
@@ -108,13 +115,25 @@ public final class ArmsRenderer {
         renderArm(mc, player, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), gunArm,
                 at(now, GUN_HAND), at(idle, GUN_SHOULDER));
 
-        // Other arm: comes up for the reload and works the ramrod.
+        // Other arm does the reload: brings a musket ball to the muzzle and drops it in, then grips the
+        // ramrod and rams it home, then lets go and drops away.
         if (frame >= RELOAD_START && frame <= RELOAD_END) {
             Vector3f rest = at(idle, OTHER_REST);
             Vector3f hand;
             if (frame < ROD_START) {
-                float t = ease((frame - RELOAD_START + 1) / (float) (ROD_START - RELOAD_START + 1));
-                hand = new Vector3f(rest).lerp(at(now, rod(0)), t);
+                // Reach up to just above the muzzle with the ball, then dip as it is dropped in.
+                Vector3f aboveMuzzle = at(now, MUZZLE_ABOVE);
+                Vector3f atMuzzle = at(now, MUZZLE);
+                int step = frame - RELOAD_START;
+                if (step < BALL_DROP_FRAME) {
+                    hand = new Vector3f(rest).lerp(aboveMuzzle, ease((step + 1) / (float) BALL_DROP_FRAME));
+                } else {
+                    hand = new Vector3f(aboveMuzzle).lerp(atMuzzle, ease((step - BALL_DROP_FRAME + 1)
+                            / (float) (ROD_START - RELOAD_START - BALL_DROP_FRAME)));
+                }
+                if (step <= BALL_DROP_FRAME) {
+                    renderBall(mc, player, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), hand);
+                }
             } else if (frame <= ROD_END) {
                 hand = at(now, rod(frame - ROD_START));
             } else {
@@ -124,6 +143,20 @@ public final class ArmsRenderer {
             renderArm(mc, player, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), otherArm,
                     hand, at(idle, OTHER_SHOULDER));
         }
+    }
+
+    /** The musket ball held between the fingers, drawn at the hand. */
+    private static void renderBall(Minecraft mc, AbstractClientPlayer player, PoseStack poseStack, MultiBufferSource buffers,
+                                   int light, Vector3f hand) {
+        ItemStack ball = new ItemStack(Items.IRON_NUGGET);
+        ball.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(BALL_MODEL_DATA));
+        poseStack.pushPose();
+        poseStack.translate(hand.x, hand.y + 0.03F, hand.z);
+        poseStack.mulPose(Axis.YP.rotationDegrees(45.0F));
+        poseStack.scale(0.3F, 0.3F, 0.3F);
+        mc.getItemRenderer().renderStatic(ball, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, poseStack,
+                buffers, player.level(), 0);
+        poseStack.popPose();
     }
 
     private static Vector3f rod(int index) {

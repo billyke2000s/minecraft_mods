@@ -23,6 +23,7 @@ join (greyed out without bedrock).
 `flintlock-arms/` draws your own arms in first person while you hold the Flintlock, posed like the arm
 in the original Blockbench model (hand under the gun at the trigger, drawn at the model's 1.6x scale).
 The hand is pinned to the gun in each animation frame while the shoulder stays put, so the arm pivots
-naturally through the recoil, inspect and reload motions. During the reload your other hand comes up, rides the end of the
-ramrod while it's rammed (frames 7708-7722), then drops away. Visual only; players without it can
+naturally through the recoil, inspect and reload motions. During the reload your other hand does the work: it brings a
+musket ball up and drops it into the muzzle (frames 7700-7707), grips the ramrod and rams it home
+(7708-7722), then lets go and drops away. Visual only; players without it can
 still join. AutoModpack syncs it.
