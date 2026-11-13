@@ -1,0 +1,39 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+authors="billyke2000s"
+# Server-side behaviour change; harmless on clients.
+displayTest="IGNORE_SERVER_VERSION"
+description='''
+Add-on for Server Flintlock: the musket ball is a real projectile. It flies at a real flintlock
+pistol ball's speed (about 250 m/s) with gravity and air drag, and the damage happens when the ball hits.
+'''
+
+[[mixins]]
+config="flintlockballistics.mixins.json"
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="flintlock"
+    type="optional"
+    versionRange="*"
+    ordering="AFTER"
+    side="BOTH"

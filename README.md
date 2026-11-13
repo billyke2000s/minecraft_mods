@@ -17,3 +17,15 @@ bedrock texture (no copied textures). Change the tools in `bedrock-tools/tools/g
 and commit what it writes; a new pack needs a new `PACK_VERSION` file name. Admins can give a full set
 with `/loot give <player> loot bedrocktools:all_tools`. Every player gets the recipes in their recipe book on
 join (greyed out without bedrock).
+
+## Flintlock Ballistics (add-on for Server Flintlock)
+
+`flintlock-ballistics/` is a NeoForge 1.21.1 add-on that turns Server Flintlock's instant hitscan into
+a real musket ball. The ball leaves the barrel at about **250 m/s** (12.5 blocks per tick, a typical
+flintlock pistol round ball), drops under real gravity (9.81 m/s²) and loses speed to air drag (about a
+quarter over the first 50 blocks). **The damage happens when the ball hits**, using Server Flintlock's
+damage-by-distance and the Upgrades headshots/knockback/stagger, so fast-moving or distant targets can
+be missed and you may need to lead them. The gunshot, muzzle smoke and reload are unchanged.
+
+It works by a mixin into `dev.obskyra.flintlock.FlintlockMod.fire` (it switches off only the instant hit,
+the instant impact sparks and the decorative slow ball). Remove the jar to go back to hitscan.
