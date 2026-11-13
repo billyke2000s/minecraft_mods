@@ -20,14 +20,21 @@ join (greyed out without bedrock).
 
 ## Whip (server + client mod)
 
-`whip/` is a NeoForge 1.21.1 mod that adds a black braided leather **Whip** (Combat tab). A lash deals
-half a heart and jolts the target forward in the direction you're facing with a little hop, with a
-loud crack and a rendered leather lash. Left-click reaches 2 blocks further than a normal hit; **right-click
-throws the whip out to 7 blocks**. Like a real bullwhip it starts thrown back, a loop rolls forward
-until the tip snaps straight, it cracks *at the tip*, and only whoever is still under the tip at that
-moment is struck. Then it goes slack and drops. The tip also presses buttons, flips levers and trips
-pressure plates it cracks on, from up to 7 blocks away. 250 durability.
-Players need it too; AutoModpack syncs it.
+`whip/` is a NeoForge 1.21.1 mod that adds a black braided leather **Whip** (Combat tab). Players need it
+too; AutoModpack syncs it. 250 durability.
+
+- **Right-click** throws the whip out to 7 blocks. Like a real bullwhip it starts thrown back, a loop
+  rolls forward until the tip snaps straight, and it cracks *at the tip* (loud). Only what is still under
+  the tip at that moment is struck. Then it goes slack and drops. The tip stops on anything in the way,
+  including grass and flowers.
+- **Left-click** hits up close with 2 blocks of extra reach.
+- **A creature hit** loses half a heart and is jolted forward with a hop. 15% of the time the lash wraps
+  their held item and yanks it out of their hand towards you.
+- **Item frames, boats and minecarts** take the hit too (a frame drops its item).
+- **Blocks at the tip:** buttons are pressed, levers flipped, pressure plates tripped for a second,
+  bells rung, and grass, flowers and ferns cut (crops, saplings, berry bushes and nether wart are spared).
+- **The crack itself** snags loose items at the tip and flicks them back to you, and spooks animals within
+  6 blocks so they bolt away from the bang.
 
 Recipe (shaped): leather on the diagonal from bottom-left to top-right, and string down the right-hand
 column below the top corner:
@@ -38,5 +45,5 @@ column below the top corner:
 L . S
 ```
 
-The texture comes from `whip/tools/generate_textures.py` (needs Pillow) and the crack sound from
+The icon comes from `whip/tools/generate_textures.py` (needs Pillow) and the crack sound from
 `whip/tools/generate_sound.py` (needs numpy and ffmpeg).

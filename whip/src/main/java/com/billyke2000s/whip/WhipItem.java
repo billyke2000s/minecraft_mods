@@ -16,7 +16,16 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.BasePressurePlateBlock;
+import net.minecraft.world.level.block.BellBlock;
+import net.minecraft.world.level.block.BushBlock;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.NetherWartBlock;
+import net.minecraft.world.level.block.SaplingBlock;
+import net.minecraft.world.level.block.StemBlock;
+import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ButtonBlock;
 import net.minecraft.world.level.block.LeverBlock;
@@ -39,6 +48,12 @@ public class WhipItem extends Item {
     private static final double FORWARD = 0.7;
     private static final double HOP = 0.4;
     private static final int COOLDOWN = 14;
+    /** Chance the lash wraps a creature's held item and pulls it free. */
+    private static final float DISARM_CHANCE = 0.15F;
+    /** Loose items this close to the tip are snagged. */
+    private static final double SNAG_RADIUS = 1.0;
+    /** Animals this close to the crack bolt. */
+    private static final double SCARE_RADIUS = 6.0;
 
     public WhipItem(Properties properties) {
         super(properties);
@@ -48,6 +63,9 @@ public class WhipItem extends Item {
     public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
         jolt(target, attacker);
         if (attacker.level() instanceof ServerLevel level) {
+            if (level.getRandom().nextFloat() < DISARM_CHANCE) {
+                disarm(level, attacker, target);
+            }
             // The hit already landed; just show the lash (it cracks at the tip, no second hit).
             level.addFreshEntity(WhipLashEntity.create(level, attacker,
                     target.position().add(0, target.getBbHeight() * 0.6, 0), null, false));
@@ -69,26 +87,20 @@ public class WhipItem extends Item {
             Vec3 eye = player.getEyePosition();
             Vec3 look = player.getLookAngle();
             Vec3 far = eye.add(look.scale(RANGE));
-            BlockHitResult block = level.clip(new ClipContext(eye, far, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
-            // Buttons, levers and pressure plates have no collision, so look for them separately (by outline)
-            // and let the tip land on one if it's nearer than the first solid block. Grass etc. is ignored.
-            BlockHitResult thin = level.clip(new ClipContext(eye, far, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
-            if (thin.getType() == HitResult.Type.BLOCK && isWorkable(level.getBlockState(thin.getBlockPos()))
-                    && (block.getType() == HitResult.Type.MISS
-                    || eye.distanceToSqr(thin.getLocation()) <= eye.distanceToSqr(block.getLocation()) + 1.0E-4)) {
-                block = thin;
-            }
+            // OUTLINE: like a real lash, the tip stops on anything in the way, including grass and flowers,
+            // and can land on thin things like buttons, levers and pressure plates.
+            BlockHitResult block = level.clip(new ClipContext(eye, far, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
             Vec3 end = block.getType() == HitResult.Type.MISS ? far : block.getLocation();
             AABB search = player.getBoundingBox().expandTowards(look.scale(RANGE)).inflate(1.0);
             EntityHitResult hit = ProjectileUtil.getEntityHitResult(player, eye, end, search,
-                    entity -> entity instanceof LivingEntity && entity != player && entity.isPickable() && !entity.isSpectator(),
+                    entity -> entity != player && entity.isPickable() && !entity.isSpectator() && !(entity instanceof WhipLashEntity),
                     eye.distanceToSqr(end));
-            LivingEntity target = null;
+            Entity target = null;
             BlockPos blockTarget = null;
-            if (hit != null && hit.getEntity() instanceof LivingEntity living) {
-                target = living;
+            if (hit != null) {
+                target = hit.getEntity();
                 end = hit.getLocation();
-            } else if (block.getType() == HitResult.Type.BLOCK && isWorkable(level.getBlockState(block.getBlockPos()))) {
+            } else if (block.getType() == HitResult.Type.BLOCK) {
                 blockTarget = block.getBlockPos();
             }
             serverLevel.addFreshEntity(WhipLashEntity.create(serverLevel, player, end, target, blockTarget, true));
@@ -101,7 +113,16 @@ public class WhipItem extends Item {
         return block instanceof ButtonBlock || block instanceof LeverBlock || block instanceof BasePressurePlateBlock;
     }
 
-    /** The tip cracks on a button (press it), lever (flip it) or pressure plate (trip it briefly). */
+    /** Grass, flowers, ferns and the like are cut by the tip. Crops and saplings are left alone. */
+    private static boolean isCuttable(Block block) {
+        return block instanceof BushBlock && !(block instanceof CropBlock) && !(block instanceof StemBlock)
+                && !(block instanceof SaplingBlock) && !(block instanceof NetherWartBlock) && !(block instanceof SweetBerryBushBlock);
+    }
+
+    /**
+     * The tip cracks on a block: buttons are pressed, levers flipped, pressure plates tripped briefly,
+     * bells rung, and grass and flowers cut.
+     */
     static void hitBlock(ServerLevel level, Entity attacker, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         Block block = state.getBlock();
@@ -112,6 +133,10 @@ public class WhipItem extends Item {
             }
         } else if (block instanceof LeverBlock lever) {
             lever.pull(state, level, pos, player);
+        } else if (block instanceof BellBlock bell) {
+            bell.attemptToRing(attacker, level, pos, null);
+        } else if (isCuttable(block)) {
+            level.destroyBlock(pos, true, attacker);
         } else if (block instanceof BasePressurePlateBlock) {
             BlockState pressed = state;
             if (state.hasProperty(BlockStateProperties.POWERED) && !state.getValue(BlockStateProperties.POWERED)) {
@@ -131,17 +156,73 @@ public class WhipItem extends Item {
         }
     }
 
-    /** The tip lands on a creature: half a heart, a jolt forward, and wear on the whip. */
-    static void strike(ServerLevel level, Entity attacker, LivingEntity target) {
+    /**
+     * The tip lands on something. Creatures take half a heart and are jolted forward, and sometimes the
+     * lash wraps their weapon and yanks it out of their hand. Things like item frames, boats and minecarts
+     * take the hit too (an item frame drops its item).
+     */
+    static void strike(ServerLevel level, Entity attacker, Entity target) {
         DamageSource source = attacker instanceof Player player
                 ? level.damageSources().playerAttack(player)
                 : attacker instanceof LivingEntity living ? level.damageSources().mobAttack(living) : level.damageSources().generic();
-        if (target.hurt(source, DAMAGE)) {
-            jolt(target, attacker);
-            if (attacker instanceof LivingEntity living && living.getMainHandItem().getItem() instanceof WhipItem) {
-                living.getMainHandItem().hurtAndBreak(1, living, EquipmentSlot.MAINHAND);
+        if (!target.hurt(source, DAMAGE)) {
+            return;
+        }
+        if (target instanceof LivingEntity living) {
+            jolt(living, attacker);
+            if (level.getRandom().nextFloat() < DISARM_CHANCE) {
+                disarm(level, attacker, living);
             }
         }
+        if (attacker instanceof LivingEntity living && living.getMainHandItem().getItem() instanceof WhipItem) {
+            living.getMainHandItem().hurtAndBreak(1, living, EquipmentSlot.MAINHAND);
+        }
+    }
+
+    /** The lash wraps the target's held item and pulls it out of their hand towards the attacker. */
+    private static void disarm(ServerLevel level, Entity attacker, LivingEntity target) {
+        if (target instanceof Player p && (p.isCreative() || p.isSpectator())) {
+            return;
+        }
+        ItemStack held = target.getMainHandItem();
+        if (held.isEmpty()) {
+            return;
+        }
+        target.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        ItemEntity flying = new ItemEntity(level, target.getX(), target.getEyeY() - 0.3, target.getZ(), held.copy());
+        flying.setDeltaMovement(towards(target.position(), attacker.position(), 0.45, 0.3));
+        flying.setPickUpDelay(20);
+        level.addFreshEntity(flying);
+        if (target instanceof Player p) {
+            p.displayClientMessage(net.minecraft.network.chat.Component.literal("The whip yanked your item out of your hand!"), true);
+        }
+    }
+
+    /**
+     * Things that happen at the crack whatever it hits: loose items at the tip are snagged and flicked
+     * back towards the attacker, and animals nearby bolt away from the bang.
+     */
+    static void crackEffects(ServerLevel level, Entity attacker, Vec3 tip) {
+        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, new AABB(tip, tip).inflate(SNAG_RADIUS))) {
+            item.setDeltaMovement(towards(item.position(), attacker.position(), 0.5, 0.35));
+            item.hasImpulse = true;
+        }
+        for (Animal animal : level.getEntitiesOfClass(Animal.class, new AABB(tip, tip).inflate(SCARE_RADIUS))) {
+            Vec3 away = animal.position().subtract(tip);
+            if (away.lengthSqr() < 1.0E-3) {
+                away = new Vec3(level.getRandom().nextDouble() - 0.5, 0, level.getRandom().nextDouble() - 0.5);
+            }
+            Vec3 flee = animal.position().add(new Vec3(away.x, 0, away.z).normalize().scale(8.0));
+            animal.getNavigation().moveTo(flee.x, flee.y, flee.z, 1.6);
+        }
+    }
+
+    private static Vec3 towards(Vec3 from, Vec3 to, double speed, double lift) {
+        Vec3 flat = new Vec3(to.x - from.x, 0, to.z - from.z);
+        if (flat.lengthSqr() > 1.0E-4) {
+            flat = flat.normalize().scale(speed);
+        }
+        return new Vec3(flat.x, lift, flat.z);
     }
 
     /** Push the target the way the attacker is facing, with a small hop. */

@@ -45,11 +45,11 @@ public class WhipLashEntity extends Entity {
         noPhysics = true;
     }
 
-    public static WhipLashEntity create(Level level, Entity owner, Vec3 target, @Nullable LivingEntity strikeTarget, boolean strikes) {
+    public static WhipLashEntity create(Level level, Entity owner, Vec3 target, @Nullable Entity strikeTarget, boolean strikes) {
         return create(level, owner, target, strikeTarget, null, strikes);
     }
 
-    public static WhipLashEntity create(Level level, Entity owner, Vec3 target, @Nullable LivingEntity strikeTarget,
+    public static WhipLashEntity create(Level level, Entity owner, Vec3 target, @Nullable Entity strikeTarget,
                                         @Nullable BlockPos strikeBlock, boolean strikes) {
         WhipLashEntity lash = new WhipLashEntity(WhipMod.WHIP_LASH.get(), level);
         lash.setPos(owner.getX(), owner.getEyeY(), owner.getZ());
@@ -118,6 +118,7 @@ public class WhipLashEntity extends Entity {
         Vec3 tip = target();
         level.playSound(null, tip.x, tip.y, tip.z, WhipMod.CRACK.get(), net.minecraft.sounds.SoundSource.PLAYERS, 3.0F,
                 0.9F + level.getRandom().nextFloat() * 0.2F);
+        WhipItem.crackEffects(level, owner, tip);
         if (!strikes) {
             return;
         }
@@ -128,9 +129,8 @@ public class WhipLashEntity extends Entity {
             return;
         }
         Entity hit = level.getEntity(strikeTargetId);
-        if (hit instanceof LivingEntity target && target.isAlive()
-                && target.getBoundingBox().inflate(STRIKE_TOLERANCE).contains(tip)) {
-            WhipItem.strike(level, owner, target);
+        if (hit != null && hit.isAlive() && hit.getBoundingBox().inflate(STRIKE_TOLERANCE).contains(tip)) {
+            WhipItem.strike(level, owner, hit);
         }
     }
 
