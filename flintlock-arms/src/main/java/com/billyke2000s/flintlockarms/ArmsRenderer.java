@@ -22,6 +22,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import com.mojang.math.Axis;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.component.CustomModelData;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -336,11 +337,12 @@ public final class ArmsRenderer {
         HumanoidArm gunArm = player.getMainArm();
         HumanoidArm otherArm = gunArm.getOpposite();
         float equip = event.getEquipProgress();
+        float swing = event.getSwingProgress();
 
         ItemStack idleStack = stack.copy();
         idleStack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(IDLE));
-        Matrix4f idle = itemMatrix(mc, player, idleStack, gunArm, equip);
-        Matrix4f now = itemMatrix(mc, player, stack, gunArm, equip);
+        Matrix4f idle = itemMatrix(mc, player, idleStack, gunArm, equip, swing);
+        Matrix4f now = itemMatrix(mc, player, stack, gunArm, equip, swing);
 
         // Gun arm: the designer's keyframed arm where there is one (right-handed only, since the Blockbench
         // arm is a right arm); otherwise hand on the gun in this frame, shoulder where it rests.
@@ -410,11 +412,26 @@ public final class ArmsRenderer {
         return t * t * (3.0F - 2.0F * t);
     }
 
-    /** The transform the game applies to a held item in first person (no swing), into model 0..1 space. */
-    private static Matrix4f itemMatrix(Minecraft mc, AbstractClientPlayer player, ItemStack stack, HumanoidArm arm, float equip) {
+    /**
+     * The transform the game applies to a held item in first person, into model 0..1 space. Includes the
+     * punch swing exactly as vanilla's ItemInHandRenderer applies it to an ordinary held item, so the arms
+     * move with the gun when the player punches.
+     */
+    private static Matrix4f itemMatrix(Minecraft mc, AbstractClientPlayer player, ItemStack stack, HumanoidArm arm,
+                                       float equip, float swing) {
         boolean right = arm == HumanoidArm.RIGHT;
+        int side = right ? 1 : -1;
         PoseStack ps = new PoseStack();
-        ps.translate((right ? 1.0F : -1.0F) * 0.56F, -0.52F + equip * -0.6F, -0.72F);
+        float sqrtSwing = Mth.sqrt(swing);
+        ps.translate(side * -0.4F * Mth.sin(sqrtSwing * Mth.PI), 0.2F * Mth.sin(sqrtSwing * Mth.PI * 2.0F),
+                -0.2F * Mth.sin(swing * Mth.PI));
+        ps.translate(side * 0.56F, -0.52F + equip * -0.6F, -0.72F);
+        float f = Mth.sin(swing * swing * Mth.PI);
+        ps.mulPose(Axis.YP.rotationDegrees(side * (45.0F + f * -20.0F)));
+        float f1 = Mth.sin(sqrtSwing * Mth.PI);
+        ps.mulPose(Axis.ZP.rotationDegrees(side * f1 * -20.0F));
+        ps.mulPose(Axis.XP.rotationDegrees(f1 * -80.0F));
+        ps.mulPose(Axis.YP.rotationDegrees(side * -45.0F));
         BakedModel model = mc.getItemRenderer().getModel(stack, player.level(), player, player.getId());
         model.applyTransform(right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
                 ps, !right);
