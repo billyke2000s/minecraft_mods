@@ -1,78 +1,56 @@
 #!/usr/bin/env python3
-"""Draws the Whip item texture (32x32): a black braided bullwhip coiled in a double loop, the stiff
-handle running up to the top-right with a wrist strap, and a few loose tassel strips at the tip.
+"""Draws the Whip item icon (16x16, hotbar size): a black braided bullwhip - short handle bottom-left,
+the lash curling up in a loop and falling away to a tasselled tip at the bottom-right.
+
+Black leather vanishes on dark slots, so the leather is drawn in near-black greys with braid
+highlights, and the whole shape gets a pure-black outline (like vanilla's dark items).
 
 Run: python3 whip/tools/generate_textures.py  (needs Pillow). Commit the PNG it writes.
 """
-import math
 import os
 
 from PIL import Image
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "main", "resources",
                    "assets", "whip", "textures", "item", "whip.png")
-SIZE = 32
 
-DARK = (14, 14, 16, 255)
-MID = (34, 34, 38, 255)
-LIGHT = (66, 66, 74, 255)
-STRAP = (24, 24, 27, 255)
+OUTLINE = (8, 8, 10, 255)
+HANDLE = [(52, 46, 44, 255), (78, 70, 66, 255)]      # braided grip, slightly warm
+POMMEL = (96, 88, 82, 255)
+LASH = [(52, 52, 58, 255), (100, 100, 112, 255)]        # braided thong
+TIP = (112, 112, 122, 255)
+
+# Handle: two pixels thick, bottom-left up towards the centre.
+HANDLE_PX = [(1, 14), (2, 13), (3, 12), (4, 11), (5, 10),
+             (2, 14), (3, 13), (4, 12), (5, 11), (6, 10)]
+POMMEL_PX = [(1, 15), (0, 14)]
+# Lash: up out of the handle, round a loop overhead, then falling away to the tip.
+LASH_PX = [(6, 9), (7, 8), (7, 7), (6, 6), (5, 5), (5, 4), (6, 3), (7, 2), (8, 2), (9, 2), (10, 2),
+           (11, 3), (12, 4), (12, 5), (12, 6), (11, 7), (11, 8), (12, 9), (13, 10), (13, 11)]
+TIP_PX = [(14, 12), (14, 13), (13, 13), (15, 12)]
 
 
 def main():
-    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    body = {}
+    for p in HANDLE_PX:
+        body[p] = HANDLE[(p[0] + p[1]) % 2]
+    for p in POMMEL_PX:
+        body[p] = POMMEL
+    for i, p in enumerate(LASH_PX):
+        body[p] = LASH[i % 2]
+    for p in TIP_PX:
+        body[p] = TIP
 
-    def put(x, y, c):
-        if 0 <= x < SIZE and 0 <= y < SIZE:
-            img.putpixel((x, y), c)
-
-    def braid(step):
-        # Plait pattern: dark, mid, highlight.
-        return (DARK, MID, LIGHT)[step % 3]
-
-    def thick_point(x, y, r, step):
-        for dx in range(-r, r + 1):
-            for dy in range(-r, r + 1):
-                if dx * dx + dy * dy <= r * r + 0.5:
-                    put(x + dx, y + dy, braid(step + dx + dy))
-
-    # Double coil of thong: two loops of braided cord.
-    for (cx, cy, rx, ry, r, phase) in ((12.5, 19.5, 10.5, 9.0, 1, 0), (13.5, 19.5, 6.5, 4.8, 1, 1)):
-        steps = 140
-        for i in range(steps):
-            a = 2 * math.pi * i / steps
-            x = int(round(cx + rx * math.cos(a)))
-            y = int(round(cy + ry * math.sin(a)))
-            thick_point(x, y, r, i // 3 + phase)
-
-    # Handle: a stiff, thicker braided stock from the coil up to the top-right corner.
-    x0, y0, x1, y1 = 19, 12, 29, 2
-    n = 40
-    for i in range(n + 1):
-        t = i / n
-        x = int(round(x0 + (x1 - x0) * t))
-        y = int(round(y0 + (y1 - y0) * t))
-        for d in (-1, 0, 1):
-            put(x + d, y, braid(i // 2 + d))
-            put(x, y + d, braid(i // 2 + d + 1))
-    # Knob at the butt and a wrist strap looping off it.
-    for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1), (2, 0), (0, -1)):
-        put(29 + dx, 1 + dy, DARK)
-    for x, y in ((31, 3), (31, 4), (30, 5), (29, 5), (28, 4)):
-        put(x, y, STRAP)
-
-    # The fall and tassel strips hanging off the inner coil, like the reference.
-    for x, y in ((19, 17), (20, 18), (21, 19), (21, 20)):
-        put(x, y, DARK)
-    tassels = [[(22, 21), (23, 23), (23, 25), (24, 27), (24, 28)],
-               [(22, 21), (24, 22), (25, 24), (26, 26), (27, 27)],
-               [(22, 21), (24, 21), (26, 22), (28, 23), (29, 24)]]
-    for strip in tassels:
-        for (xa, ya), (xb, yb) in zip(strip, strip[1:]):
-            for i in range(9):
-                t = i / 8
-                put(int(round(xa + (xb - xa) * t)), int(round(ya + (yb - ya) * t)), MID)
-        put(*strip[-1], LIGHT)
+    # Outline: every empty neighbour (including diagonals) of the shape becomes black.
+    for (x, y) in list(body):
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                q = (x + dx, y + dy)
+                if q not in body and 0 <= q[0] < 16 and 0 <= q[1] < 16:
+                    img.putpixel(q, OUTLINE)
+    for (x, y), c in body.items():
+        img.putpixel((x, y), c)
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     img.save(OUT)
