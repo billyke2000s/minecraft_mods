@@ -3,6 +3,8 @@ package com.billyke2000s.whip;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -23,6 +25,16 @@ public final class WhipMod {
 
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
     private static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, MODID);
+    private static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(Registries.ENTITY_TYPE, MODID);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<WhipLashEntity>> WHIP_LASH = ENTITIES.register("whip_lash",
+            () -> EntityType.Builder.<WhipLashEntity>of(WhipLashEntity::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F)
+                    .clientTrackingRange(8)
+                    .updateInterval(2)
+                    .noSave()
+                    .noSummon()
+                    .build("whip_lash"));
 
     public static final DeferredHolder<SoundEvent, SoundEvent> CRACK = SOUNDS.register("crack",
             () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(MODID, "crack")));
@@ -43,6 +55,7 @@ public final class WhipMod {
     public WhipMod(IEventBus modBus) {
         ITEMS.register(modBus);
         SOUNDS.register(modBus);
+        ENTITIES.register(modBus);
         modBus.addListener(WhipMod::onCreativeTabs);
     }
 

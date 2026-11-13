@@ -1,6 +1,5 @@
 package com.billyke2000s.whip;
 
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,11 +20,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3f;
 
 /**
  * Left-click: a close lash (with extra reach). Right-click: crack the whip out to {@link #RANGE} blocks,
- * lashing the first creature in the way. Either way the lash is drawn as a dark leather line, it cracks,
+ * lashing the first creature in the way. Either way the whip visibly lashes out and back, it cracks,
  * the target loses half a heart and is jolted forward with a little hop.
  */
 public class WhipItem extends Item {
@@ -34,7 +32,6 @@ public class WhipItem extends Item {
     private static final double FORWARD = 0.7;
     private static final double HOP = 0.4;
     private static final int COOLDOWN = 12;
-    private static final DustParticleOptions LEATHER = new DustParticleOptions(new Vector3f(0.09F, 0.08F, 0.08F), 1.1F);
 
     public WhipItem(Properties properties) {
         super(properties);
@@ -45,7 +42,7 @@ public class WhipItem extends Item {
         jolt(target, attacker);
         if (attacker.level() instanceof ServerLevel level) {
             drawLash(level, attacker, target.position().add(0, target.getBbHeight() * 0.6, 0));
-            crack(level, target.position());
+            crack(level, attacker.position());
         }
         return true;
     }
@@ -78,7 +75,7 @@ public class WhipItem extends Item {
                 }
             }
             drawLash(serverLevel, player, end);
-            crack(serverLevel, end);
+            crack(serverLevel, player.position());
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
@@ -100,22 +97,13 @@ public class WhipItem extends Item {
         }
     }
 
-    /** A dark leather line from the attacker's hand to the end point, slightly sagging in the middle. */
+    /** Sends out the visible lash from the attacker's hand to the end point. */
     private static void drawLash(ServerLevel level, Entity from, Vec3 end) {
-        Vec3 look = from.getLookAngle();
-        Vec3 start = from.getEyePosition().add(look.scale(0.5)).add(0, -0.35, 0);
-        Vec3 span = end.subtract(start);
-        int steps = Math.max(4, (int) (span.length() * 5));
-        for (int i = 0; i <= steps; i++) {
-            double t = (double) i / steps;
-            double sag = Math.sin(Math.PI * t) * 0.25;
-            Vec3 p = start.add(span.scale(t)).add(0, -sag, 0);
-            level.sendParticles(LEATHER, p.x, p.y, p.z, 1, 0, 0, 0, 0);
-        }
+        level.addFreshEntity(WhipLashEntity.create(level, from, end));
     }
 
     private static void crack(ServerLevel level, Vec3 at) {
-        level.playSound(null, at.x, at.y, at.z, WhipMod.CRACK.get(), SoundSource.PLAYERS, 1.2F,
+        level.playSound(null, at.x, at.y, at.z, WhipMod.CRACK.get(), SoundSource.PLAYERS, 2.0F,
                 0.9F + level.getRandom().nextFloat() * 0.2F);
     }
 }

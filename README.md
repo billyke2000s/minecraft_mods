@@ -22,7 +22,7 @@ join (greyed out without bedrock).
 
 `whip/` is a NeoForge 1.21.1 mod that adds a black braided leather **Whip** (Combat tab). A lash deals
 half a heart and jolts the target forward in the direction you're facing with a little hop, with a
-crack sound and a visible lash. Left-click reaches 2 blocks further than a normal hit; **right-click
+loud crack and a rendered leather lash that flies out from your hand and snaps back. Left-click reaches 2 blocks further than a normal hit; **right-click
 cracks the whip out to 7 blocks** and lashes the first creature or player in the way. 250 durability.
 Players need it too; AutoModpack syncs it.
 

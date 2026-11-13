@@ -22,11 +22,11 @@ def main():
     n = int(RATE * 0.14)
     noise = rng.standard_normal(n)
     smooth = np.convolve(noise, np.ones(12) / 12, mode="same")
-    whoosh = smooth * np.linspace(0, 1, n) ** 2 * 0.35
+    whoosh = smooth * np.linspace(0, 1, n) ** 2 * 0.25
     # Snap: a 2 ms broadband click with a fast decay and a little body.
     m = int(RATE * 0.09)
     t = np.arange(m) / RATE
-    snap = rng.standard_normal(m) * np.exp(-t / 0.006)
+    snap = rng.standard_normal(m) * np.exp(-t / 0.012)
     snap += np.sin(2 * np.pi * 2300 * t) * np.exp(-t / 0.004) * 0.8
     snap[: int(RATE * 0.002)] *= 2.5
     # Short room tail.
@@ -34,7 +34,10 @@ def main():
     tail = rng.standard_normal(k) * np.exp(-np.arange(k) / RATE / 0.03) * 0.08
     sound = np.concatenate([whoosh, snap, tail])
     sound /= np.max(np.abs(sound))
-    pcm = (sound * 0.95 * 32767).astype(np.int16)
+    # Drive it hard through a soft clipper so the snap is loud, not just a quiet click.
+    sound = np.tanh(sound * 5.0)
+    sound /= np.max(np.abs(sound))
+    pcm = (sound * 0.98 * 32767).astype(np.int16)
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
