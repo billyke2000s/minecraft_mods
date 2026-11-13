@@ -1,0 +1,10 @@
+{
+  "item.sixshooter.revolver": "Six-Shot Revolver",
+  "item.sixshooter.revolver_round": "Revolver Rounds",
+  "sixshooter.crafting.firearms": "Firearms",
+  "subtitles.sixshooter.fire": "Revolver fires",
+  "subtitles.sixshooter.dry_fire": "Revolver clicks",
+  "subtitles.sixshooter.cylinder_open": "Revolver cylinder opens",
+  "subtitles.sixshooter.insert_rounds": "Rounds load",
+  "subtitles.sixshooter.cylinder_close": "Cylinder snaps shut"
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "sixshooter:firearms",
+    "icon": {
+      "type": "item",
+      "value": {
+        "item": "sixshooter:revolver"
+      }
+    },
+    "name": {
+      "translate": "sixshooter.crafting.firearms"
+    },
+    "listing": [
+      {
+        "group": "weapons",
+        "recipes": [
+          "sixshooter:revolver",
+          "sixshooter:revolver_round"
+        ]
+      }
+    ]
+  }
+]

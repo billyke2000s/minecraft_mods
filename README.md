@@ -17,3 +17,10 @@ bedrock texture (no copied textures). Change the tools in `bedrock-tools/tools/g
 and commit what it writes; a new pack needs a new `PACK_VERSION` file name. Admins can give a full set
 with `/loot give <player> loot bedrocktools:all_tools`. Every player gets the recipes in their recipe book on
 join (greyed out without bedrock).
+
+## Six Shooter (rebuild for NeoForge 21.1)
+
+`sixshooter/` is Tommy's Six Shooter revolver mod, rebuilt from its compiled 1.0.3 jar against NeoForge
+21.1 so it loads on this server (the original was compiled against a different NeoForge and crashed
+players on start-up and on join). Same items, ids, textures, sounds, recipes and behaviour; only the
+build is fixed. Players need it too; AutoModpack syncs it.

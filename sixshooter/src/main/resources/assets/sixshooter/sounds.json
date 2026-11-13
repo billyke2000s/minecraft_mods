@@ -1,0 +1,47 @@
+{
+  "fire": {
+    "subtitle": "subtitles.sixshooter.fire",
+    "sounds": [
+      {
+        "name": "sixshooter:fire",
+        "stream": false
+      }
+    ]
+  },
+  "dry_fire": {
+    "subtitle": "subtitles.sixshooter.dry_fire",
+    "sounds": [
+      {
+        "name": "sixshooter:dry_fire",
+        "stream": false
+      }
+    ]
+  },
+  "cylinder_open": {
+    "subtitle": "subtitles.sixshooter.cylinder_open",
+    "sounds": [
+      {
+        "name": "sixshooter:cylinder_open",
+        "stream": false
+      }
+    ]
+  },
+  "insert_rounds": {
+    "subtitle": "subtitles.sixshooter.insert_rounds",
+    "sounds": [
+      {
+        "name": "sixshooter:insert_rounds",
+        "stream": false
+      }
+    ]
+  },
+  "cylinder_close": {
+    "subtitle": "subtitles.sixshooter.cylinder_close",
+    "sounds": [
+      {
+        "name": "sixshooter:cylinder_close",
+        "stream": false
+      }
+    ]
+  }
+}
