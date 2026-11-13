@@ -17,3 +17,11 @@ bedrock texture (no copied textures). Change the tools in `bedrock-tools/tools/g
 and commit what it writes; a new pack needs a new `PACK_VERSION` file name. Admins can give a full set
 with `/loot give <player> loot bedrocktools:all_tools`. Every player gets the recipes in their recipe book on
 join (greyed out without bedrock).
+
+## Animated MOTD (server-side mod)
+
+`animated-motd/` animates the server-list description: a white shimmer sweeps across the title
+(**SURVIVAL**) and the bottom line rotates through several messages. Minecraft only fetches a server's
+description when the list loads or you press Refresh, so each refresh shows a different frame (true
+continuous animation isn't possible in the vanilla server list). Edit `config/animatedmotd.txt` on the
+server (created on first start) and restart to change the title, colours, speed or messages.

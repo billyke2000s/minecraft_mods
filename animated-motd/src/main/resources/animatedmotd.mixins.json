@@ -1,0 +1,12 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.billyke2000s.animatedmotd.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MinecraftServerStatusMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
